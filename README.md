@@ -16,7 +16,7 @@ To adhere to pragmatic engineering principles, this project is structured as a *
 
 Despite being developed in different environments, the entire ecosystem is orchestrated seamlessly using Docker.
 
-
+```text
 nexus-retail-architecture/
 │
 ├── /frontend/           # UI Layer: Responsive web application for customers and admins (React/Vue).
@@ -28,7 +28,7 @@ nexus-retail-architecture/
 ├── /infrastructure/     # Cloud & Network: Nginx configurations for API Gateway, load balancing, and cloud deployment scripts.
 │
 └── docker-compose.yml   # Orchestration: The central configuration that boots up the entire microservice ecosystem with a single command.
-
+```
 
 Module Breakdown
 frontend/: Handles the visual presentation and client-side state management. It communicates strictly with the backend via RESTful APIs, keeping the UI completely decoupled from the data layer.
