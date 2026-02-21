@@ -1,0 +1,64 @@
+// ============================================
+// POLYGLOT PERSISTENCE - E-Commerce ER Diagram
+// ============================================
+// [PostgreSQL] --> Users, Orders, Order_Items
+// [MongoDB]    --> Products (NoSQL - flexible schema)
+// ─────────────────────────────────────────
+// [PostgreSQL] USERS TABLE
+// ─────────────────────────────────────────
+Table users [headercolor: #3498db, note: ' PostgreSQL - ACID garantili'] {
+  user_id    uuid        [pk, default: `gen_random_uuid()`, note: 'Primary Key']
+  email      varchar [unique, not null, note: 'Unique user email']
+  password_hash varchar [not null, note: 'bcrypt hash']
+  role       varchar [not null, default: 'customer', note: 'admin | customer']
+  created_at timestamp   [default: `now()`, note: 'Registration date']
+}
+// ─────────────────────────────────────────
+// [MongoDB] PRODUCTS COLLECTION
+// ─────────────────────────────────────────
+Table products [headercolor: #27ae60, note: ' MongoDB - Flexible schema (NoSQL)'] {
+  product_id  varchar [pk, note: 'MongoDB ObjectId (_id)']
+  name        varchar [not null, note: 'Product name']
+  price       decimal [not null, note: 'Price']
+  stock       int         [not null, default: 0, note: 'Stock quantity']
+  category    varchar [note: 'Product category']
+
+  // In MongoDB, this field is actually a nested JSON document:
+  // attributes: {
+  //   size:    "XL",          --> for t-shirt
+  //   color:   "Mavi",
+  //   brand:   "Nike",
+  //   ram:     "16GB",        --> for Laptop 
+  //   cpu:     "i7-13700H",
+  //   weight:  "1.8kg"
+  // }
+  attributes_json text [note: ' MongoDB dynamic field - Schema-free JSON document']
+}
+
+// ─────────────────────────────────────────
+// [PostgreSQL] ORDERS TABLE
+// ─────────────────────────────────────────
+Table orders [headercolor: #e67e22, note: ' PostgreSQL - Financial record'] {
+  order_id     uuid         [pk, default: `gen_random_uuid()`, note: 'Primary Key']
+  user_id      uuid         [not null, ref: > users.user_id, note: 'FK → Users']
+  total_amount decimal [not null, note: 'Total amount']
+  status       varchar  [not null, default: 'pending', note: 'pending | processing | shipped | delivered | cancelled']
+  created_at   timestamp    [default: `now()`, note: 'Order date']
+}
+
+// ─────────────────────────────────────────
+// [PostgreSQL] ORDER_ITEMS TABLE (Junction Table)
+// ─────────────────────────────────────────
+Table order_items [headercolor: #9b59b6, note: ' Junction Table - Order ↔ Product'] {
+  item_id      uuid         [pk, default: `gen_random_uuid()`, note: 'Primary Key']
+  order_id     uuid         [not null, ref: > orders.order_id, note: 'FK → Orders']
+  product_id   varchar  [not null, ref: > products.product_id, note: 'FK → MongoDB Product _id']
+  quantity     int          [not null, default: 1, note: 'piece']
+  unit_price   decimal [not null, note: 'Price at time of sale (snapshot)']
+}
+// ─────────────────────────────────────────
+// References
+// ─────────────────────────────────────────
+// Ref: orders.user_id      > users.user_id       // one user → many order
+// Ref: order_items.order_id > orders.order_id    // one order → many item
+// Ref: order_items.product_id > products.product_id // one product → many item
