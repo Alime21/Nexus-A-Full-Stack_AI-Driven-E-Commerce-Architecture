@@ -9,6 +9,29 @@ Nexus is a comprehensive, scalable e-commerce platform designed to demonstrate e
 At its core lies an intelligent data science engine, leveraging predictive models (such as Random Forest and GBM) to analyze customer behavior and proactively prevent churn. Developed with a strong focus on pragmatic, clean code principles, the entire architecture is containerized using Docker and orchestrated for seamless cloud deployment. It serves as a blueprint for bridging the gap between software development, data science, and cloud operations.
 
 ----------------------
+##  Tech Stack & Architecture (Work in Progress)
+
+This project is actively being developed as a microservices-oriented monorepo. The current and planned technology stack includes:
+
+###  Infrastructure & DevOps
+* **Docker & Docker Compose:** Containerization and local orchestration of the microservices environment.
+* **Git & GitHub:** Version control and monorepo management.
+
+###  Databases (Polyglot Persistence Layer)
+* **PostgreSQL:** ACID-compliant relational database for Users, Orders, and financial transactions.
+* **MongoDB:** Document-based NoSQL database for the flexible Product catalog schema.
+* **Redis:** In-memory data store for caching and shopping cart management.
+
+### Data Science & Machine Learning (Upcoming)
+* **R (Random Forest / GBM):** Customer churn prediction model, integrated as a standalone microservice.
+* **Python (FastAPI / Flask):** API layer to serve the machine learning models to the core backend.
+
+### Backend API & Business Logic (Upcoming)
+* *(e.g., Node.js with Express / Java with Spring Boot)*
+
+### Frontend (Upcoming)
+* *(e.g., React.js / Vue.js)*
+----------------------
 
 ## System Architecture & Repository Structure
 
@@ -40,3 +63,45 @@ data-science/: This directory houses the analytical intelligence of the platform
 infrastructure/: Contains the necessary configurations to take the application from a local development environment to a production-ready cloud deployment, ensuring security and network stability.
 
 ---------------------
+
+## Database Architecture: The Polyglot Persistence Approach
+
+In modern, high-traffic e-commerce ecosystems, a single database paradigm is often a bottleneck. To ensure scalability, data integrity, and system flexibility, this project implements a **Polyglot Persistence** architecture. This means strategically matching the right database technology to the specific characteristics of each domain.
+
+###  Why PostgreSQL? (Users & Orders)
+* **ACID Compliance & Strict Schema:** Financial transactions (Orders) and sensitive credentials (Users) require absolute data integrity, strict rules, and consistency. 
+* **Relational Power:** Tracking which user bought which item at what time requires robust, relationship-driven SQL structures.
+
+###  Why MongoDB? (Products)
+* **Schema Flexibility (NoSQL):** A product catalog is inherently dynamic. A high-end laptop requires completely different data fields (RAM, CPU, GPU) than a t-shirt (Size, Fabric, Color). MongoDB's document-based nature allows for an inherently flexible `attributes_json` field. This eliminates the need for complex, inefficient SQL anti-patterns (like EAV tables) or tables filled with `NULL` values.
+
+-------
+
+## System Blueprint (ER Diagram)
+<img width="1104" height="609" alt="er-diagram" src="https://github.com/user-attachments/assets/92723209-d233-4461-9e15-34b0a65e2cf5" />
+
+-------
+
+## Key Architectural Decisions & Engineering Trade-offs
+
+Beyond simply connecting tables, the database layer was designed with enterprise-level security and financial accuracy in mind:
+
+1. **UUIDs Over Auto-Incrementing IDs (Security First):** Instead of using predictable sequential integers (e.g., ID: 1, 2, 3), all primary keys (`user_id`, `order_id`) utilize universally unique identifiers (`gen_random_uuid()`). This effectively neutralizes **ID Enumeration Attacks** (preventing malicious users from scraping order data by simply guessing the next ID) and makes the system ready for distributed database scaling.
+
+2. **Historical Financial Immutability (The `unit_price` Snapshot):**
+   In the `order_items` table, the `unit_price` is distinctly recorded at the exact moment of checkout. This is a critical e-commerce rule: if a product's price in the MongoDB catalog is updated tomorrow, the historical invoices and total amounts of yesterday's orders remain strictly untouched and accurate.
+
+3. **Cross-Database Referencing (Decoupling):**
+   Notice that the `product_id` inside the PostgreSQL `order_items` table acts as a "soft" foreign key. It stores the `_id` string from MongoDB. The actual relationship constraint is handled elegantly at the backend application (API) layer, keeping the microservices completely decoupled.
+
+---
+
+## Tech Stack & Tools
+| Category | Technologies |
+| :--- | :--- |
+| **Database & Caching** | ![PostgreSQL](https://img.shields.io/badge/postgresql-4169e1?style=for-the-badge&logo=postgresql&logoColor=white) ![MongoDB](https://img.shields.io/badge/MongoDB-%234ea94b.svg?style=for-the-badge&logo=mongodb&logoColor=white) ![Redis](https://img.shields.io/badge/redis-%23DD0031.svg?style=for-the-badge&logo=redis&logoColor=white)![ElasticSearch](https://img.shields.io/badge/-ElasticSearch-005571?style=for-the-badge&logo=elasticsearch)|
+| **DevOps, Cloud & Architecture**|![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white) ![Nginx](https://img.shields.io/badge/nginx-%23009639.svg?style=for-the-badge&logo=nginx&logoColor=white) ![GitHub Actions](https://img.shields.io/badge/github%20actions-%232671E5.svg?style=for-the-badge&logo=githubactions&logoColor=white)![AWS](https://img.shields.io/badge/AWS-%23FF9900.svg?style=for-the-badge&logo=amazon-aws&logoColor=white)|
+| **Backend & API (Microservices)**|![NodeJS](https://img.shields.io/badge/node.js-6DA55F?style=for-the-badge&logo=node.js&logoColor=white) ![Express.js](https://img.shields.io/badge/express.js-%23404d59.svg?style=for-the-badge&logo=express&logoColor=%2361DAFB)![JWT](https://img.shields.io/badge/JWT-black?style=for-the-badge&logo=JSON%20web%20tokens)|
+| **Frontend & Mobile Clients**|![React](https://img.shields.io/badge/react-%2320232a.svg?style=for-the-badge&logo=react&logoColor=%2361DAFB) ![TailwindCSS](https://img.shields.io/badge/tailwindcss-%2338B2AC.svg?style=for-the-badge&logo=tailwind-css&logoColor=white)![Swift](https://img.shields.io/badge/swift-F54A2A?style=for-the-badge&logo=swift&logoColor=white)![iOS](https://img.shields.io/badge/iOS-000000?style=for-the-badge&logo=ios&logoColor=white)|
+
+---
