@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  # 1. PostgreSQL (Kullanıcılar ve Siparişler için)
+  postgres_db:
+    image: postgres:15-alpine
+    container_name: nexus_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: nexus_user
+      POSTGRES_PASSWORD: nexus_password
+      POSTGRES_DB: nexus_core_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  # 2. MongoDB (Esnek Ürün Kataloğu için)
+  mongo_db:
+    image: mongo:6.0
+    container_name: nexus_mongo
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: mongo_admin
+      MONGO_INITDB_ROOT_PASSWORD: mongo_password
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+  # 3. Redis (Hızlı Önbellekleme ve Sepet İşlemleri için)
+  redis_cache:
+    image: redis:7-alpine
+    container_name: nexus_redis
+    restart: always
+    ports:
+      - "6379:6379"
+
+volumes:
+  postgres_data:
+  mongo_data:
