@@ -1,7 +1,5 @@
-version: '3.8'
-
 services:
-  # 1. PostgreSQL (Kullanıcılar ve Siparişler için)
+  # 1. PostgreSQL (For Users and Orders)
   postgres_db:
     image: postgres:15-alpine
     container_name: nexus_postgres
@@ -15,7 +13,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
-  # 2. MongoDB (Esnek Ürün Kataloğu için)
+  # 2. MongoDB (For the Flexible Product Catalog)
   mongo_db:
     image: mongo:6.0
     container_name: nexus_mongo
@@ -28,13 +26,26 @@ services:
     volumes:
       - mongo_data:/data/db
 
-  # 3. Redis (Hızlı Önbellekleme ve Sepet İşlemleri için)
+  # 3. Redis (for fast caching and shopping cart operations)
   redis_cache:
     image: redis:7-alpine
     container_name: nexus_redis
     restart: always
     ports:
       - "6379:6379"
+
+  # 4. Backend API (brain of the system)
+  backend_api:
+    build: ./backend
+    container_name: nexus_backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app  
+    depends_on:
+      - postgres_db
+      - mongo_db
+      - redis_cache    
 
 volumes:
   postgres_data:
