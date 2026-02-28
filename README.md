@@ -48,8 +48,7 @@ nexus-retail-architecture/
 │
 ├── /frontend/           # UI Layer: Responsive mobile application for customers and admins (iOS).
 │
-├── /backend/            # Core API: Business logic, JWT authentication, and
-polyglot database management (FastAPI).
+├── /backend/            # Core API: Business logic, JWT authentication, and polyglot database management (FastAPI).
 │
 ├── /data-science/       # AI Engine: Customer churn prediction models and a Python API wrapper for backend integration.
 │
