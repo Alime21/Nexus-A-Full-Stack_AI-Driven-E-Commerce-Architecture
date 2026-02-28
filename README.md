@@ -110,7 +110,30 @@ Product search requires relevance ranking, fuzzy matching, and fast full-text qu
 ### Backend Architectural Decisions
 
 -------------------
+## Backend Architecture
 
+<img width="900" alt="backend-architecture" src="docs/backend-architecture.svg" />
+
+The backend of Nexus is designed as a high-performance, asynchronous RESTful API. Built with **FastAPI** and **Python 3.11**, it acts as the central nervous system of the platform, handling business logic, data validation, secure authentication, and orchestrating interactions with the polyglot database layer.
+
+
+
+### Request Lifecycle (Separation of Concerns)
+
+To maintain a clean and scalable codebase, the backend strictly follows an N-Tier architecture (Separation of Concerns). A standard API request flows through the following highly isolated layers:
+
+1. **Routing (`main.py`):** The entry point of the application. It defines the API endpoints (e.g., `/login`, `/register`), handles HTTP methods, and acts as the "receptionist" that routes incoming traffic to the appropriate logic.
+2. **Data Validation (`schemas.py`):** Before any data touches the database, it must pass through **Pydantic** models. This layer acts as a strict bouncer, ensuring all incoming payloads (JSON) perfectly match the required data types and structures (e.g., validating email formats).
+3. **Business Logic & Security (`utils.py`):** Handles core security operations such as generating JSON Web Tokens (JWT) for session management and hashing/verifying passwords using `passlib` and `Bcrypt`.
+4. **Data Access Layer (`crud.py`):** The only layer allowed to communicate directly with the databases. It executes Create, Read, Update, and Delete operations using SQLAlchemy ORM, isolating database queries from the API routes.
+5. **Data Models (`models.py`):** Defines the PostgreSQL table structures and relationships as Python classes using SQLAlchemy, automatically generating the database schema.
+
+### Backend Architectural Decisions
+
+1. **FastAPI Over Flask/Django:** FastAPI was chosen for its native asynchronous capabilities (ASGI), allowing the server to handle thousands of concurrent requests efficiently. Additionally, it automatically generates OpenAPI (Swagger) documentation, drastically reducing frontend-backend integration friction.
+2. **Stateless Authentication (JWT):** The system completely avoids session-based, server-side memory authentication. Upon successful login, the server issues a JSON Web Token (JWT) valid for a specific timeframe. The frontend includes this token in the header of subsequent requests. This statelessness allows the backend to be horizontally scaled (copied across multiple servers) without worrying about session synchronization.
+3. **Zero-Trust Data Entry (Pydantic):** Relying on database constraints for validation is expensive and slow. By leveraging Pydantic, invalid payloads (like a missing `@` in an email or a password that is too short) are rejected at the API gateway level with a `422 Unprocessable Entity` error before any database connection is even attempted.
+4. **Irreversible Password Hashing (Bcrypt):** Passwords are never stored in plain text. The system uses the Bcrypt hashing algorithm with an automatically generated salt. This ensures that even in the event of a catastrophic database breach, user credentials remain mathematically impossible to reverse-engineer.
 
 --------------------
 
