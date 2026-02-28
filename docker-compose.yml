@@ -16,7 +16,7 @@ services:
   # 2. MongoDB (For the Flexible Product Catalog)
   mongo_db:
     image: mongo:6.0
-    container_name: nexus_mongo
+    container_name: mongodb
     restart: always
     environment:
       MONGO_INITDB_ROOT_USERNAME: mongo_admin
