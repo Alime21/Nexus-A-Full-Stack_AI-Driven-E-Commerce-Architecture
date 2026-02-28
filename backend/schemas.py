@@ -15,3 +15,13 @@ class UserResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+# The form the customer will fill out when logging in
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str
+
+# The format of the VIP Card we will give to our customer
+class Token(BaseModel):
+    access_token: str
+    token_type: str

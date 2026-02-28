@@ -21,3 +21,16 @@ def create_user(db: Session, user: schemas.UserCreate):
     db.refresh(db_user) 
     
     return db_user
+
+def authenticate_user(db: Session, email: str, password: str):
+    """The system checks the database to see if the customer's email and password are correct."""
+    # 1. first find an email
+    user = get_user_by_email(db, email)
+    if not user:
+        return False 
+    
+    # 2. If email exists, compare passwords (using verify_password in utils)
+    if not utils.verify_password(password, user.hashed_password):
+        return False # Reject if password is incorrect.
+        
+    return user # if both are true, let the user in!
