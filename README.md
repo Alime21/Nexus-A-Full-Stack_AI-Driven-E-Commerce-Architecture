@@ -15,22 +15,25 @@ This project is actively being developed as a microservices-oriented monorepo. T
 
 ###  Infrastructure & DevOps
 * **Docker & Docker Compose:** Containerization and local orchestration of the microservices environment.
-* **Git & GitHub:** Version control and monorepo management.
+* **Git & GitHub:** Version control, monorepo management, and CI/CD pipelines.
 
 ###  Databases (Polyglot Persistence Layer)
 * **PostgreSQL:** ACID-compliant relational database for Users, Orders, and financial transactions.
 * **MongoDB:** Document-based NoSQL database for the flexible Product catalog schema.
 * **Redis:** In-memory data store for caching and shopping cart management.
-
+  
+### Backend API & Security (Core Microservice)
+* **Python & FastAPI:** High-performance, asynchronous RESTful API development.
+* **SQLAlchemy & Pydantic:** Object-Relational Mapping (ORM) and rigorous data validation.
+* **Passlib (Bcrypt) & PyJWT:** Secure password hashing and stateless, token-based (JWT) user authentication.
+  
 ### Data Science & Machine Learning (Upcoming)
 * **R (Random Forest / GBM):** Customer churn prediction model, integrated as a standalone microservice.
-* **Python (FastAPI / Flask):** API layer to serve the machine learning models to the core backend.
-
-### Backend API & Business Logic (Upcoming)
-* *(e.g., Node.js with Express / Java with Spring Boot)*
+* **Python API Wrapper:** To serve the machine learning models to the core backend.
 
 ### Frontend (Upcoming)
-* *(e.g., React.js / Vue.js)*
+* **UI/UX Layer:** Swift
+  
 ----------------------
 
 ## System Architecture & Repository Structure
@@ -42,11 +45,12 @@ Despite being developed in different environments, the entire ecosystem is orche
 ```text
 nexus-retail-architecture/
 │
-├── /frontend/           # UI Layer: Responsive web application for customers and admins (React/Vue).
+├── /frontend/           # UI Layer: Responsive mobile application for customers and admins (iOS).
 │
-├── /backend/            # Core API: Business logic, secure authentication, and polyglot database management (PostgreSQL, MongoDB, Redis).
+├── /backend/            # Core API: Business logic, JWT authentication, and
+polyglot database management (FastAPI).
 │
-├── /data-science/       # AI Engine: Customer churn prediction models (built with R, Random Forest, GBM) and a Python API wrapper for backend integration.
+├── /data-science/       # AI Engine: Customer churn prediction models and a Python API wrapper for backend integration.
 │
 ├── /infrastructure/     # Cloud & Network: Nginx configurations for API Gateway, load balancing, and cloud deployment scripts.
 │
@@ -56,7 +60,7 @@ nexus-retail-architecture/
 Module Breakdown
 frontend/: Handles the visual presentation and client-side state management. It communicates strictly with the backend via RESTful APIs, keeping the UI completely decoupled from the data layer.
 
-backend/: The backbone of the application. It processes orders, manages the product catalog, and acts as the central hub that routes data between the frontend, the databases, and the data science engine.
+backend/: The backbone of the application. It secures endpoints using JWT, processes orders, manages the product catalog, and acts as the central hub routing data between the frontend, databases, and the data science engine.
 
 data-science/: This directory houses the analytical intelligence of the platform. By analyzing historical user data, it serves predictive insights (like churn probability) back to the core system to trigger automated retention strategies.
 
@@ -84,7 +88,7 @@ In modern, high-traffic e-commerce ecosystems, a single database paradigm is oft
 
 ## Key Architectural Decisions & Engineering Trade-offs
 
-Beyond simply connecting tables, the database layer was designed with enterprise-level security and financial accuracy in mind:
+Beyond simply connecting tables, the backend and database layers were designed with enterprise-level security and financial accuracy in mind:
 
 1. **UUIDs Over Auto-Incrementing IDs (Security First):** Instead of using predictable sequential integers (e.g., ID: 1, 2, 3), all primary keys (`user_id`, `order_id`) utilize universally unique identifiers (`gen_random_uuid()`). This effectively neutralizes **ID Enumeration Attacks** (preventing malicious users from scraping order data by simply guessing the next ID) and makes the system ready for distributed database scaling.
 
@@ -93,6 +97,10 @@ Beyond simply connecting tables, the database layer was designed with enterprise
 
 3. **Cross-Database Referencing (Decoupling):**
    Notice that the `product_id` inside the PostgreSQL `order_items` table acts as a "soft" foreign key. It stores the `_id` string from MongoDB. The actual relationship constraint is handled elegantly at the backend application (API) layer, keeping the microservices completely decoupled.
+
+BACKEND:
+4. **Stateless Authentication (JWT):**
+   The system completely avoids session-based authentication. Upon successful login, the server issues a JSON Web Token (JWT). This allows the frontend to authenticate subsequent requests statelessly, reducing database lookups and making the backend horizontally scalable.   
 
 ---
 
