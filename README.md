@@ -101,22 +101,11 @@ Product search requires relevance ranking, fuzzy matching, and fast full-text qu
 ### System Blueprint (ER Diagram)
 <img width="1104" height="609" alt="er-diagram" src="https://github.com/user-attachments/assets/92723209-d233-4461-9e15-34b0a65e2cf5" />
 
-----------------
-
-## Backend Architecture
-
-### Request Lifecycle
-
-### Backend Architectural Decisions
 
 -------------------
 ## Backend Architecture
-
-<img width="900" alt="backend-architecture" src="docs/backend-architecture.svg" />
-
+<img width="1363" height="958" alt="backend-architecture" src="https://github.com/user-attachments/assets/fe5e884f-3920-49ae-a880-25eaa1185f64" />
 The backend of Nexus is designed as a high-performance, asynchronous RESTful API. Built with **FastAPI** and **Python 3.11**, it acts as the central nervous system of the platform, handling business logic, data validation, secure authentication, and orchestrating interactions with the polyglot database layer.
-
-
 
 ### Request Lifecycle (Separation of Concerns)
 
