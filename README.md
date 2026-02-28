@@ -15,7 +15,6 @@ An end-to-end, containerized e-commerce architecture. Integrates a modern fronte
 - [DevOps, Cloud & Architecture](#)
 - [Getting Started](#getting-started)
 - [API Documentation](#api-documentation)
-- [Roadmap](#roadmap)
 
 ---
 
