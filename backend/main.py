@@ -64,6 +64,7 @@ def login_user(user_credentials: schemas.UserLogin, db: Session = Depends(get_db
 # DATABASE: MongoDB (NoSQL, Document-Based, Flexible Schema)
 # ==============================================================================
 
+# ---- Create Product (POST) -----
 @app.post("/products", response_model=schemas.ProductResponse, tags=["Products"])
 def create_product(product: schemas.ProductCreate):
     """
@@ -79,6 +80,7 @@ def create_product(product: schemas.ProductCreate):
     # 4. Return the newly created product document
     return product_dict
 
+# ----- Get whole products (GET) -----
 @app.get("/products", response_model=list[schemas.ProductResponse], tags=["Products"])
 def get_products():
     """
@@ -95,7 +97,7 @@ def get_products():
     # 3. Return the sanitized list to the client    
     return products
 
-
+# ----- Get only one product (GET) -----
 @app.get("/products/{product_id}", response_model=schemas.ProductResponse, tags=["Products"])
 def get_product(product_id: str):
     """
@@ -119,3 +121,55 @@ def get_product(product_id: str):
     # 4. Convert the BSON ObjectId to a string before returning the JSON payload
     product["_id"] = str(product["_id"])
     return product
+
+#  ----- Update product (PUT) -----
+@app.put("/products/{product_id}", response_model=schemas.ProductResponse, tags=["Products"])
+def update_product(product_id: str, product: schemas.ProductCreate):
+    """
+    Updates an existing product in MongoDB.
+    First checks if the ID is valid, then performs the update.
+    """
+    # 1. ID Check
+    try:
+        obj_id = ObjectId(product_id)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid Product ID format")
+
+    # 2. find product and update
+    # We are converting the incoming data (Pydantic) into a dictionary.
+    update_data = product.model_dump()
+    
+    # We are telling MongoDB to "Find the document with this ID and replace its contents using the $set command"
+    result = product_collection.update_one({"_id": obj_id}, {"$set": update_data})
+    
+    # 3. If nothing changes (or the product is not found), we might give an error.
+    # However, here, we will consider it successful even if the product exists but the data is the same.
+
+    # 4. We retrieve the updated product from the database again and show it to the user.
+    updated_product = product_collection.find_one({"_id": obj_id})
+    if not updated_product:
+        raise HTTPException(status_code=404, detail="Product not found")
+        
+    updated_product["_id"] = str(updated_product["_id"])
+    return updated_product
+
+# ----- Delete product (DELETE) ------
+@app.delete("/products/{product_id}", tags=["Products"])
+def delete_product(product_id: str):
+    """
+    Deletes a product from the database permanently.
+    """
+    # 1. ID Check
+    try:
+        obj_id = ObjectId(product_id)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid Product ID format")
+
+    # 2. Delete
+    result = product_collection.delete_one({"_id": obj_id})
+    
+    # 3. If the number of deleted records is 0, it means the product does not exist.
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Product not found")
+    
+    return {"message": "Product deleted successfully"}
