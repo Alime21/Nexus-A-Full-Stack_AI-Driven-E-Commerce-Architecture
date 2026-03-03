@@ -5,8 +5,11 @@ It orchestrates incoming HTTP requests and routes them to the appropriate
 services (Authentication, Product Catalog) across our Polyglot Persistence layer.
 """
 # --- CORE IMPORTS ---
-from fastapi import FastAPI, Depends, HTTPException
+import os
+import shutil
+from fastapi import FastAPI, Depends, HTTPException, File, UploadFile
 from sqlalchemy.orm import Session
+from fastapi.staticfiles import StaticFiles
 
 # --- LOCAL MODULES & DATABASE CONNECTIONS ---
 from database import engine, get_db, product_collection
@@ -21,7 +24,13 @@ models.Base.metadata.create_all(bind=engine)
 # --- FASTAPI APP INSTANCE ---
 app = FastAPI(title="Nexus E-Commerce API", version="0.1.0")
 
+# --- IMAGE STORAGE SETTINGS ---
+UPLOAD_DIR = "uploads"
+if not os.path.exists(UPLOAD_DIR):
+    os.makedirs(UPLOAD_DIR)
 
+# We are making the "uploads" folder accessible to the internet with the name "/static".
+app.mount("/static", StaticFiles(directory=UPLOAD_DIR), name="static")    
 
 # ==============================================================================
 # DOMAIN: USER MANAGEMENT & AUTHENTICATION
@@ -173,3 +182,41 @@ def delete_product(product_id: str):
         raise HTTPException(status_code=404, detail="Product not found")
     
     return {"message": "Product deleted successfully"}
+
+# ------ Product image Upload (IMAGE UPLOAD) -------
+@app.post("/products/{product_id}/image", tags=["Products"])
+async def upload_product_image(product_id: str, file: UploadFile = File(...)):
+    """
+    Uploads an image file for a specific product and updates the product's document in MongoDB.
+    The image is stored locally in the 'uploads' directory.
+    """
+
+    # 1. ID CHECK
+    try:
+        obj_id = ObjectId(product_id)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid Product ID format")
+    
+    # 2. VERIFY THE PRODUCT
+    product = product_collection.find_one({"_id": obj_id})
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+    
+    # 3. Create the File Name (We add the ID to the beginning to avoid conflicts)
+    file_extension = file.filename.split(".")[-1]
+    unique_filename = f"{product_id}_{file.filename}"
+    file_location = f"{UPLOAD_DIR}/{unique_filename}"
+
+    # 4. Save the file to disk.
+    with open(file_location, "wb+") as file_object:
+        shutil.copyfileobj(file.file, file_object)
+
+    # 5. Add Image URL to Product in MongoDB    
+    image_url = f"/static/{unique_filename}"
+    
+    product_collection.update_one(
+        {"_id": obj_id},
+        {"$set": {"image": image_url}}
+    )
+    
+    return {"info": "Image uploaded successfully", "url": image_url}
