@@ -9,7 +9,7 @@ from pymongo import MongoClient
 
 # --- PostgreSQL CONNECTION SETTINGS ---
 
-SQLALCHEMY_DATABASE_URL = "postgresql://nexus_user:nexus_password@postgres_db:5432/nexus_core_db"
+SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL")
 
 engine = create_engine(SQLALCHEMY_DATABASE_URL)
 
@@ -26,7 +26,7 @@ def get_db():
 
 # --- MONGODB CONNECTION SETTINGS (PRODUCT CATALOG) ---
 
-MONGO_URL = "mongodb://mongo_admin:mongo_password@mongo_db:27017"
+MONGO_URL = os.getenv("MONGO_URL")
 mongo_client = MongoClient(MONGO_URL, serverSelectionTimeoutMS=5000)
 mongo_db = mongo_client["nexus_catalog"]
 product_collection = mongo_db["products"]
