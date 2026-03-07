@@ -80,6 +80,7 @@ class ProductResponse(ProductBase):
             # Allows the use of 'id' in Python while mapping it to '_id' in MongoDB
             populate_by_name = True
 
+
 # ==============================================================================
 # DOMAIN: SHOPPING CART SCHEMAS
 # TARGET DATABASE: Redis (In-Memory Data Structure Store)
@@ -88,3 +89,27 @@ class ProductResponse(ProductBase):
 class CartItemAdd(BaseModel):
     product_id: str
     quantity: int = 1
+
+
+# ==============================================================================
+# DOMAIN: ORDER SCHEMAS
+# TARGET DATABASE: PostgreSQL (Relational)
+# ==============================================================================
+
+class OrderItemResponse(BaseModel):
+    product_id: str
+    quantity: int
+    price_at_purchase: float
+
+    class Config:
+        from_attributes = True  
+
+class OrderResponse(BaseModel):
+    id: int
+    user_email: str
+    total_amount: float
+    status: str
+    items: list[OrderItemResponse] = []
+
+    class Config:
+        from_attributes = True

@@ -266,3 +266,75 @@ def remove_from_cart(user_email: str, product_id: str, redis_client: redis.Redis
          raise HTTPException(status_code=404, detail="Product not found in cart")
          
     return {"message": "Product removed from cart"}
+
+
+# ==============================================================================
+# CHECKOUT & ORDER PROCESSING (THE POLYGLOT MAGIC)
+# ==============================================================================
+
+@app.post("/checkout/{user_email}", response_model=schemas.OrderResponse, tags=["Shopping Cart"])
+def checkout(user_email: str, db: Session = Depends(get_db), redis_client: redis.Redis = Depends(get_redis)):
+    """
+    1. Reads the cart from Redis.
+    2. Verifies prices and product existence from MongoDB.
+    3. Creates a permanent Order and OrderItems in PostgreSQL.
+    4. Clears the Redis cart upon success.
+    """
+    cart_key = f"cart:{user_email}"
+    cart_data = redis_client.hgetall(cart_key)
+    
+    # 1. Shopping Basket/Cart empty check (Redis)
+    if not cart_data:
+        raise HTTPException(status_code=400, detail="Checkout failed: Cart is empty")
+    
+    total_amount = 0.0
+    order_items_ready = []
+    
+    # 2. Verify Products and Prices  (MongoDB)
+    for product_id_str, quantity_str in cart_data.items():
+        quantity = int(quantity_str)
+        
+        if not ObjectId.is_valid(product_id_str):
+             raise HTTPException(status_code=400, detail=f"Invalid product ID in cart: {product_id_str}")
+             
+        product = product_collection.find_one({"_id": ObjectId(product_id_str)})
+        if not product:
+            raise HTTPException(status_code=404, detail=f"Product {product_id_str} no longer exists")
+            
+        # We retrieve the current price from MongoDB.
+        current_price = float(product.get("price", 0.0))
+        total_amount += current_price * quantity
+        
+        # We are preparing the order items for PostgreSQL.
+        order_item = models.OrderItem(
+            product_id=product_id_str,
+            quantity=quantity,
+            price_at_purchase=current_price
+        )
+        order_items_ready.append(order_item)
+
+    # 3. Create Order and Write to Database (PostgreSQL)
+    # By default, we consider the payment successful (paid) during the MVP phase.
+    new_order = models.Order(
+        user_email=user_email,
+        total_amount=total_amount,
+        status="paid" 
+    )
+    
+    db.add(new_order)
+    db.commit()      # To assign an ID to the order, we first need to record this.
+    db.refresh(new_order)
+    
+   
+    # We are linking the sub-items we have prepared to this order (order_id).
+    for item in order_items_ready:
+        item.order_id = new_order.id
+        db.add(item)
+        
+    db.commit()      # We also permanently record the pens.
+    db.refresh(new_order)
+    
+    # 4. Operation Successful: Discard Cart (Redis Cleanup)
+    redis_client.delete(cart_key)
+    
+    return new_order
