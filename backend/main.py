@@ -10,12 +10,14 @@ services (Authentication, Product Catalog) across our Polyglot Persistence layer
 import os
 import shutil
 from typing import List, Optional
+from database import engine, get_db, product_collection, get_redis
 
 # --- 2. THIRD PARTY IMPORTS ---
 from fastapi import FastAPI, Depends, HTTPException, File, UploadFile, status
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 from bson.objectid import ObjectId
+import redis
 
 # --- 3. LOCAL APPLICATION IMPORTS ---
 import models
@@ -208,3 +210,59 @@ async def upload_product_image(product_id: str, file: UploadFile = File(...)):
     )
     
     return {"info": "Image uploaded successfully", "url": image_url}
+
+# ==============================================================================
+# MODULE 4: SHOPPING CART SERVICE (REDIS - IN MEMORY CACHE)
+# ==============================================================================
+@app.post("/cart/{user_email}/add", tags=["Shopping Cart"])
+def add_to_cart(user_email: str, item: schemas.CartItemAdd, redis_client: redis.Redis = Depends(get_redis)):
+    """
+    Adds a product to the user's shopping cart in Redis.
+    Uses Redis Hash (HINCRBY) to store user carts efficiently.
+    """
+    # 1. We can check if this product actually exists on MongoDB (Optional but safe)
+    if not ObjectId.is_valid(item.product_id):
+        raise HTTPException(status_code=400, detail="Invalid Product ID")
+    
+    product = product_collection.find_one({"_id": ObjectId(item.product_id)})
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found in catalog")
+    # 2. Create the shopping cart key in Redis 
+    cart_key = f"cart:{user_email}"
+    
+    # 3. Add the product and its quantity to the Redis Hash (HINCRBY: Increments the quantity if it exists, otherwise creates it)
+    redis_client.hincrby(cart_key, item.product_id, item.quantity)
+    
+    return {"message": f"Added {item.quantity} units of product to {user_email}'s cart"}
+
+
+@app.get("/cart/{user_email}", tags=["Shopping Cart"])
+def get_cart(user_email: str, redis_client: redis.Redis = Depends(get_redis)):
+    """
+    Retrieves the entire shopping cart for a user from Redis.
+    """
+    cart_key = f"cart:{user_email}"
+    
+    # Retrieve all data from that user's shopping cart from Redis (HGETALL)
+    cart_data = redis_client.hgetall(cart_key)
+    
+    if not cart_data:
+        return {"user": user_email, "cart": {}, "message": "Cart is empty"}
+        
+    return {"user": user_email, "cart": cart_data}
+
+
+@app.delete("/cart/{user_email}/remove/{product_id}", tags=["Shopping Cart"])
+def remove_from_cart(user_email: str, product_id: str, redis_client: redis.Redis = Depends(get_redis)):
+    """
+    Removes a specific product from the user's cart.
+    """
+    cart_key = f"cart:{user_email}"
+    
+    # Remove that product from Redis Hash (HDEL)
+    result = redis_client.hdel(cart_key, product_id)
+    
+    if result == 0:
+         raise HTTPException(status_code=404, detail="Product not found in cart")
+         
+    return {"message": "Product removed from cart"}

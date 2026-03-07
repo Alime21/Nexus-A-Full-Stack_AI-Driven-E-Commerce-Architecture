@@ -48,6 +48,7 @@ services:
       - redis_cache    
 
     environment:
+      # DATABASE URL Variables: ------------------
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres_db:5432/${POSTGRES_DB}
       - MONGO_URL=mongodb://${MONGO_INITDB_ROOT_USERNAME}:${MONGO_INITDB_ROOT_PASSWORD}@mongo_db:27017
       # AWS --------------

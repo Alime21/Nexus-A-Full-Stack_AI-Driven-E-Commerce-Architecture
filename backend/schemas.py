@@ -79,3 +79,12 @@ class ProductResponse(ProductBase):
         class Config:
             # Allows the use of 'id' in Python while mapping it to '_id' in MongoDB
             populate_by_name = True
+
+# ==============================================================================
+# DOMAIN: SHOPPING CART SCHEMAS
+# TARGET DATABASE: Redis (In-Memory Data Structure Store)
+# ==============================================================================
+
+class CartItemAdd(BaseModel):
+    product_id: str
+    quantity: int = 1
