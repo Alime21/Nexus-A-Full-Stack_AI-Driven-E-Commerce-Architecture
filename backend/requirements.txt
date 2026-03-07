@@ -11,4 +11,5 @@ pymongo
 boto3
 python-multipart
 redis
+stripe
 # The logic: FastAPI is our engine, SQLAlchemy is our database bridge, passlib/bcrypt is our password protection shield, and python-jose is our famous JWT VIP ticket.

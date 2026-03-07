@@ -113,3 +113,11 @@ class OrderResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+# ==============================================================================
+# PAYMENT & CHECKOUT SCHEMAS
+# ==============================================================================       
+
+class CheckoutRequest(BaseModel):
+     payment_token: str = "tok_visa"

@@ -7,6 +7,7 @@ services (Authentication, Product Catalog) across our Polyglot Persistence layer
 """
 
 # --- 1. STANDARD LIBRARY IMPORTS ---
+import stripe
 import os
 import shutil
 from typing import List, Optional
@@ -40,7 +41,10 @@ if not os.path.exists(UPLOAD_DIR):
     os.makedirs(UPLOAD_DIR)
 
 # We are making the "uploads" folder accessible to the internet with the name "/static".
-app.mount("/static", StaticFiles(directory=UPLOAD_DIR), name="static")    
+app.mount("/static", StaticFiles(directory=UPLOAD_DIR), name="static") 
+
+# Stripe Setting
+stripe.api_key = os.getenv("STRIPE_SECRET_KEY", "sk_test_dummy_key")
 
 
 
@@ -273,7 +277,7 @@ def remove_from_cart(user_email: str, product_id: str, redis_client: redis.Redis
 # ==============================================================================
 
 @app.post("/checkout/{user_email}", response_model=schemas.OrderResponse, tags=["Shopping Cart"])
-def checkout(user_email: str, db: Session = Depends(get_db), redis_client: redis.Redis = Depends(get_redis)):
+def checkout(user_email: str, request: schemas.CheckoutRequest, db: Session = Depends(get_db), redis_client: redis.Redis = Depends(get_redis)):
     """
     1. Reads the cart from Redis.
     2. Verifies prices and product existence from MongoDB.
@@ -283,42 +287,49 @@ def checkout(user_email: str, db: Session = Depends(get_db), redis_client: redis
     cart_key = f"cart:{user_email}"
     cart_data = redis_client.hgetall(cart_key)
     
-    # 1. Shopping Basket/Cart empty check (Redis)
+    # Shopping Basket/Cart empty check (Redis)
     if not cart_data:
         raise HTTPException(status_code=400, detail="Checkout failed: Cart is empty")
     
     total_amount = 0.0
     order_items_ready = []
     
-    # 2. Verify Products and Prices  (MongoDB)
+# ------ 1. MONGODB: Verify Products and Prices ------------
     for product_id_str, quantity_str in cart_data.items():
         quantity = int(quantity_str)
-        
-        if not ObjectId.is_valid(product_id_str):
-             raise HTTPException(status_code=400, detail=f"Invalid product ID in cart: {product_id_str}")
-             
         product = product_collection.find_one({"_id": ObjectId(product_id_str)})
+        
         if not product:
             raise HTTPException(status_code=404, detail=f"Product {product_id_str} no longer exists")
-            
+        
         # We retrieve the current price from MongoDB.
         current_price = float(product.get("price", 0.0))
         total_amount += current_price * quantity
         
-        # We are preparing the order items for PostgreSQL.
-        order_item = models.OrderItem(
-            product_id=product_id_str,
-            quantity=quantity,
-            price_at_purchase=current_price
+        order_items_ready.append(
+            models.OrderItem(product_id=product_id_str, quantity=quantity, price_at_purchase=current_price)
         )
-        order_items_ready.append(order_item)
 
-    # 3. Create Order and Write to Database (PostgreSQL)
-    # By default, we consider the payment successful (paid) during the MVP phase.
+# --------- 2. STRIPE: RECEIVING PAYMENT -----------
+    try:
+        charge = stripe.Charge.create(
+            amount=int(total_amount * 100),
+            currency="try", 
+            source=request.payment_token, 
+            description=f"Nexus Order for {user_email}"
+        )
+        order_status = "paid"
+        
+    except stripe.error.StripeError as e:
+        print(f"Stripe Test Hatası (Beklenen bir durum): {e}")
+        order_status = "payment_failed"  
+
+
+#---------- 3. POSTGRESQL: SAVE ORDERS  ---------
     new_order = models.Order(
         user_email=user_email,
         total_amount=total_amount,
-        status="paid" 
+        status=order_status
     )
     
     db.add(new_order)
@@ -334,7 +345,8 @@ def checkout(user_email: str, db: Session = Depends(get_db), redis_client: redis
     db.commit()      # We also permanently record the pens.
     db.refresh(new_order)
     
-    # 4. Operation Successful: Discard Cart (Redis Cleanup)
-    redis_client.delete(cart_key)
+# ------- 4. REDIS: CLEAN SHOPPING CART  ---------
+    if order_status == "paid":
+        redis_client.delete(cart_key)
     
     return new_order
