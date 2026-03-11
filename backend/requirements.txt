@@ -12,4 +12,5 @@ boto3
 python-multipart
 redis
 stripe
+elasticsearch>=8.0.0,<9.0.0
 # The logic: FastAPI is our engine, SQLAlchemy is our database bridge, passlib/bcrypt is our password protection shield, and python-jose is our famous JWT VIP ticket.

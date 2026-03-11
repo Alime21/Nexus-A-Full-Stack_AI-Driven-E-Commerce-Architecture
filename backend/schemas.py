@@ -43,8 +43,6 @@ class Token(BaseModel):
     access_token: str
     token_type: str
 
-
-
 # ==============================================================================
 # DOMAIN: PRODUCT CATALOG
 # TARGET DATABASE: MongoDB (NoSQL)
@@ -80,7 +78,6 @@ class ProductResponse(ProductBase):
             # Allows the use of 'id' in Python while mapping it to '_id' in MongoDB
             populate_by_name = True
 
-
 # ==============================================================================
 # DOMAIN: SHOPPING CART SCHEMAS
 # TARGET DATABASE: Redis (In-Memory Data Structure Store)
@@ -89,7 +86,6 @@ class ProductResponse(ProductBase):
 class CartItemAdd(BaseModel):
     product_id: str
     quantity: int = 1
-
 
 # ==============================================================================
 # DOMAIN: ORDER SCHEMAS
@@ -114,10 +110,19 @@ class OrderResponse(BaseModel):
     class Config:
         from_attributes = True
 
-
 # ==============================================================================
 # PAYMENT & CHECKOUT SCHEMAS
 # ==============================================================================       
 
 class CheckoutRequest(BaseModel):
      payment_token: str = "tok_visa"
+
+# ==============================================================================
+# SEARCH SCHEMAS
+# ==============================================================================
+class SearchResult(BaseModel):
+    id: str
+    name: str
+    description: str
+    price: float
+    score: float

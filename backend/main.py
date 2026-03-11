@@ -11,7 +11,8 @@ import stripe
 import os
 import shutil
 from typing import List, Optional
-from database import engine, get_db, product_collection, get_redis
+from database import engine, get_db, product_collection, get_redis, get_es, es_client
+from elasticsearch import Elasticsearch
 
 # --- 2. THIRD PARTY IMPORTS ---
 from fastapi import FastAPI, Depends, HTTPException, File, UploadFile, status
@@ -350,3 +351,70 @@ def checkout(user_email: str, request: schemas.CheckoutRequest, db: Session = De
         redis_client.delete(cart_key)
     
     return new_order
+
+
+# ==============================================================================
+# MODULE 5: SEARCH ENGINE (ELASTICSEARCH)
+# ==============================================================================
+
+@app.post("/search/sync", tags=["Search Engine"])
+def sync_products_to_elasticsearch():
+    """
+    Reads all products from MongoDB and indexes them in Elasticsearch to make them searchable.
+    In a real-world scenario, this process is done asynchronously (with RabbitMQ/Kafka), but for the MVP, we trigger it directly through an endpoint.
+    """
+    products = list(product_collection.find())
+    
+    try:
+        es_client.indices.create(index="products")
+    except Exception as e:
+        pass
+
+    success_count = 0
+    for prod in products:
+        doc = {
+            "name": prod.get("name", ""),
+            "description": prod.get("description", ""),
+            "price": float(prod.get("price", 0.0))
+        }
+
+        es_client.index(index="products", id=str(prod["_id"]), document=doc)
+        success_count += 1
+
+    return {"message": f"Successfully synced {success_count} products to Elasticsearch"}
+
+
+@app.get("/search", response_model=list[schemas.SearchResult], tags=["Search Engine"])
+def smart_search(q: str, es: Elasticsearch = Depends(get_es)):
+    """
+    Smart search that tolerates spelling errors using Fuzzy Search.
+    Example: 'ayfon' -> 'iphone', 'samsun' -> 'samsung'
+    """
+    
+    search_query = {
+        "query": {
+            "multi_match": {
+                "query": q,
+                "fields": ["name^3", "description"], 
+                "fuzziness": "AUTO" 
+            }
+        }
+    }
+
+    response = es.search(index="products", body=search_query)
+    
+    results = []
+   
+    for hit in response["hits"]["hits"]:
+        source = hit["_source"]
+        results.append(
+            schemas.SearchResult(
+                id=hit["_id"],
+                name=source.get("name"),
+                description=source.get("description"),
+                price=source.get("price"),
+                score=hit["_score"]
+            )
+        )
+        
+    return results

@@ -3,6 +3,7 @@
 # to manage database sessions, and
 # to create the basic framework (Base) upon which our tables will be built.
 
+from elasticsearch import Elasticsearch
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 from pymongo import MongoClient
@@ -41,7 +42,7 @@ product_collection = mongo_db["products"]
 # REDIS CACHE CONNECTION (For Shopping Cart & Sessions)
 # ==============================================================================
 
-REDIS_URL = os.getenv("REDIS_URL", "redis://nexus_redis:6379/0")
+REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379")
 
 redis_client = redis.Redis.from_url(REDIS_URL, decode_responses=True)
 
@@ -54,3 +55,21 @@ def get_redis():
     finally:
         # Redis connection pooling handles cleanup automatically
         pass
+
+# ==============================================================================
+# ELASTICSEARCH CONNECTION (SEARCH ENGINE)
+# ==============================================================================
+
+ES_URL = os.getenv("ELASTICSEARCH_URL", "http://elasticsearch:9200")
+
+try:
+    es_client = Elasticsearch(ES_URL)
+    if es_client.ping():
+        print("Connected to Elasticsearch Successfully!")
+    else:
+        print("Could not connect to Elasticsearch.")
+except Exception as e:
+    print(f"Elasticsearch Connection Error: {e}")
+
+def get_es():
+    yield es_client

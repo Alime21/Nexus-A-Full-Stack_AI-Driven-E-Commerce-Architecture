@@ -45,18 +45,34 @@ services:
     depends_on:
       - postgres_db
       - mongo_db
-      - redis_cache    
+      - redis_cache
+      - elasticsearch    
 
     environment:
       # DATABASE URL Variables: ------------------
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres_db:5432/${POSTGRES_DB}
       - MONGO_URL=mongodb://${MONGO_INITDB_ROOT_USERNAME}:${MONGO_INITDB_ROOT_PASSWORD}@mongo_db:27017
+      - REDIS_URL=redis://redis_cache:6379
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
       # AWS --------------
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
       - AWS_REGION=${AWS_REGION}
       - AWS_BUCKET_NAME=${AWS_BUCKET_NAME}  
 
+  # 5. Elasticsearch (For lightning-fast, typo-tolerant product searches)
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.12.2
+    container_name: nexus_elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false  
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m" 
+    ports:
+      - "9200:9200"
+    restart: always    
+
 volumes:
   postgres_data:
   mongo_data:
+  elasticsearch_data:
