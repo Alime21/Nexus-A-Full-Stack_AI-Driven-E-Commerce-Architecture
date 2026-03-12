@@ -42,7 +42,7 @@ At its core lies an intelligent data science engine, leveraging predictive model
 To adhere to pragmatic engineering principles, this project is structured as a **modular monorepo**. Each domain—from user interfaces to machine learning models—is heavily isolated to ensure a strict separation of concerns. This prevents tangled codebases and allows independent scaling. 
 
 **NEXUS - High Level Design (HLD)**
-![NEXUS HLD Architecture](BURAYA_GÖRSELİN_GITHUB_LİNKİNİ_YAPIŞTIR)
+![NEXUS HLD Architecture](https://github.com/Alime21/Nexus-A-Full-Stack_AI-Driven-E-Commerce-Architecture/blob/main/images/HLD.png)
 
 Despite being developed in different environments, the entire ecosystem is orchestrated seamlessly using Docker.
 
