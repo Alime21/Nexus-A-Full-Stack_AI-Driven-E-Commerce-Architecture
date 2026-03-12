@@ -153,7 +153,8 @@ Nexus utilizes FastAPI's automatic interactive API documentation. Since the appl
 
 Once the Docker containers are running, navigate to the following URL in your browser to access the Swagger UI:
 
-- http://localhost/docs
+**[http://localhost/docs](http://localhost/docs)**
+*(Note: This link is for local development and will only be accessible after successfully starting the Docker containers.)*
 
 From here, you can trigger database synchronizations, test the typo-tolerant Elasticsearch engine, and interact with the RESTful endpoints.
 
