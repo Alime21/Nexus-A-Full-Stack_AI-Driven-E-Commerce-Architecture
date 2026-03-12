@@ -41,6 +41,9 @@ At its core lies an intelligent data science engine, leveraging predictive model
 
 To adhere to pragmatic engineering principles, this project is structured as a **modular monorepo**. Each domain—from user interfaces to machine learning models—is heavily isolated to ensure a strict separation of concerns. This prevents tangled codebases and allows independent scaling. 
 
+**NEXUS - High Level Design (HLD)**
+![NEXUS HLD Architecture](BURAYA_GÖRSELİN_GITHUB_LİNKİNİ_YAPIŞTIR)
+
 Despite being developed in different environments, the entire ecosystem is orchestrated seamlessly using Docker.
 
 ```text
@@ -54,6 +57,10 @@ nexus-retail-architecture/
 │
 ├── /infrastructure/     # Cloud & Network: Nginx configurations for API Gateway, load balancing, and cloud deployment scripts.
 │
+├── /nginx/              # Proxy & Security: Configuration files for the Nginx reverse proxy, handling SSL termination and request routing. 
+|
+├── /images/             # Documentation: Architecture diagrams, workflow schemas, and visual assets explaining the system design.
+|
 └── docker-compose.yml   # Orchestration: The central configuration that boots up the entire microservice ecosystem with a single command.
 ```
 
@@ -141,6 +148,14 @@ Make sure you have the following installed:
 ---
 
 ## API Documentation
+
+Nexus utilizes FastAPI's automatic interactive API documentation. Since the application is routed through the Nginx API Gateway, you do not need to specify the backend port.
+
+Once the Docker containers are running, navigate to the following URL in your browser to access the Swagger UI:
+
+- http://localhost/docs
+
+From here, you can trigger database synchronizations, test the typo-tolerant Elasticsearch engine, and interact with the RESTful endpoints.
 
 ---
 
