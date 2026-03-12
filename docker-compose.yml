@@ -38,8 +38,6 @@ services:
   backend_api:
     build: ./backend
     container_name: nexus_backend
-    ports:
-      - "8000:8000"
     volumes:
       - ./backend:/app  
     depends_on:
@@ -71,6 +69,17 @@ services:
     ports:
       - "9200:9200"
     restart: always    
+
+  # 6. API Gateway (Reverse Proxy)
+  nginx:
+    image: nginx:latest
+    container_name: nexus_nginx
+    ports:
+      - "80:80" 
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf 
+    depends_on:
+      - backend_api 
 
 volumes:
   postgres_data:
