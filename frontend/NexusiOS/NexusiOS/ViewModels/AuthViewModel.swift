@@ -21,7 +21,16 @@ class AuthViewModel: ObservableObject {
                 let credentials = AuthRequest(email: email, password: password)
                 let response = try await NetworkManager.shared.loginUser(credentials: credentials)
                 
-                print("🎉 VIP Bilet (Token) Alındı: \(response.access_token)")
+                print(" VIP Bilet (Token) Alındı: \(response.access_token)")
+                
+                // 1. YENİ KOD: Bileti telefonun güvenli hafızasına (Kasa) kaydediyoruz!
+                UserDefaults.standard.set(response.access_token, forKey: "userToken")
+                
+                // Bu satırı da UI'ı güncellemek için ana iş parçacığında çalışmaya zorluyoruz
+                DispatchQueue.main.async {
+                    self.isAuthenticated = true
+                    self.isLoading = false
+                }
                 
                 self.isAuthenticated = true
                 self.isLoading = false

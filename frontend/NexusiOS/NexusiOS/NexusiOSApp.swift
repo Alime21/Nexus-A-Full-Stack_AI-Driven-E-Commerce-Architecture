@@ -1,17 +1,11 @@
-//
-//  NexusiOSApp.swift
-//  NexusiOS
-//
-//  Created by Macbook on 15.03.2026.
-//
-
+// It is the main engine that determines which screen the application will display when it is first opened.
 import SwiftUI
 
 @main
 struct NexusiOSApp: App {
     var body: some Scene {
         WindowGroup {
-            LoginView()
+            RootView()
         }
     }
 }
